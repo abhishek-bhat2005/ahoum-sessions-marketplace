@@ -108,7 +108,12 @@ def csrf(request):
 @api_view(["GET"])
 @permission_classes([permissions.AllowAny])
 def github_start(request):
-    if not settings.GITHUB_CLIENT_ID:
+    if (
+        not settings.GITHUB_CLIENT_ID
+        or settings.GITHUB_CLIENT_ID.startswith("CHANGE_ME")
+        or not settings.GITHUB_CLIENT_SECRET
+        or settings.GITHUB_CLIENT_SECRET.startswith("CHANGE_ME")
+    ):
         return Response({"detail": "GitHub OAuth is not configured."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     state = secrets.token_urlsafe(32)
     verifier = secrets.token_urlsafe(64)
