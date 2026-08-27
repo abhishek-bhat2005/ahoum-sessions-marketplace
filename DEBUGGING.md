@@ -16,6 +16,13 @@ Only issues actually encountered while building are recorded below.
 - **Fix:** wrapped it in a synchronous effect that invokes `void load()`.
 - **Verification:** the final TypeScript build passed.
 
-## Environment limitation: Docker engine unavailable
+## 3. Nginx returned 502 after recreating the backend
 
-`docker build` first failed on the Docker buildx lock under sandboxing; after permission was granted it reached Docker but reported that `dockerDesktopLinuxEngine` did not exist. This means Docker Desktop’s Linux engine was not running. No Compose or PostgreSQL test result is claimed. The host Django check and SQLite API tests were run separately; start Docker Desktop and run `docker compose up --build`, then `docker compose exec backend python manage.py test` to complete PostgreSQL verification.
+- **Diagnosis:** Django was healthy but the browser received `502 Bad Gateway` after a backend rebuild.
+- **Root cause:** Nginx had resolved the old Docker IP address of the recreated backend container and retained it.
+- **Fix:** configured Docker’s DNS resolver (`127.0.0.11`) and used a variable upstream so Nginx resolves the backend dynamically. The Nginx configuration also now proxies `/admin/` to Django.
+- **Verification:** the live `http://127.0.0.1/api/health/` request returned HTTP 200 through Nginx; GitHub OAuth and Django admin subsequently worked.
+
+## Environment readiness resolved
+
+Docker Desktop’s Linux engine was initially unavailable. Once started, Compose built all containers, PostgreSQL became healthy, and `docker compose exec backend python manage.py test --keepdb` passed all six tests against PostgreSQL.

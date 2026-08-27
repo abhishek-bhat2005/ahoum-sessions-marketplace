@@ -39,7 +39,7 @@ Booking, creator capacity edits, and cancellation all lock the `Session` row ins
 
 Run the backend suite against the Compose PostgreSQL service with `docker compose exec backend python manage.py test`. Do not treat SQLite as proof of locking correctness; the concurrency test is conditional on database row-lock support and is intended for PostgreSQL.
 
-Verification completed in this workspace: `npm.cmd run build` passed (TypeScript + Vite production output); `manage.py check` passed; migrations were checked; and five Django API/rule tests passed using SQLite. The PostgreSQL-only concurrency test was correctly skipped because SQLite does not support `select_for_update`. Compose startup and the actual PostgreSQL concurrency run were not executed because Docker Desktop’s Linux engine was unavailable. See `DEBUGGING.md`.
+Verification completed in this workspace: `npm.cmd run build` passed (TypeScript + Vite production output); `manage.py check` passed; migrations were checked; and all six Django tests passed through the Compose PostgreSQL service. This includes the synchronized final-seat concurrency test. The catalog, GitHub OAuth login, Creator enrollment, session publishing, booking, and booking-count UI flow were also manually verified locally. See `DEBUGGING.md`.
 
 ## Deployment and HTTPS
 
