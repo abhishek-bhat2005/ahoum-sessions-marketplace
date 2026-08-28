@@ -3,14 +3,37 @@ export type Session = {id:number; creator:{id:number; display_name:string; avata
 export type Booking = {id:number; session:Session; status:string; booked_at:string};
 let accessToken: string | null = null;
 
+const wakeRetryDelays = [2000, 4000, 8000, 12000, 16000, 20000];
+const transientGatewayStatuses = new Set([502, 503, 504]);
+
 function cookie(name:string) { return document.cookie.split('; ').find(row => row.startsWith(name + '='))?.split('=')[1]; }
-export async function ensureCsrf() { await fetch('/api/auth/csrf/', {credentials:'include'}); }
+
+function wait(milliseconds:number) {
+  return new Promise(resolve => window.setTimeout(resolve, milliseconds));
+}
+
+async function fetchWithWakeRetry(url:string, init:RequestInit, canRetry:boolean) {
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await fetch(url, init);
+    if (!canRetry || !transientGatewayStatuses.has(response.status) || attempt >= wakeRetryDelays.length) {
+      return response;
+    }
+    await wait(wakeRetryDelays[attempt]);
+  }
+}
+
+export async function ensureCsrf() { await api('/auth/csrf/'); }
 export async function api<T>(path:string, init:RequestInit = {}): Promise<T> {
+  const method = (init.method || 'GET').toUpperCase();
   const headers = new Headers(init.headers);
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  if (init.method && !['GET','HEAD','OPTIONS'].includes(init.method)) headers.set('X-CSRFToken', decodeURIComponent(cookie('csrftoken') || ''));
+  if (!['GET','HEAD','OPTIONS'].includes(method)) headers.set('X-CSRFToken', decodeURIComponent(cookie('csrftoken') || ''));
   if (init.body) headers.set('Content-Type', 'application/json');
-  const response = await fetch('/api' + path, {...init, headers, credentials:'include'});
+  const response = await fetchWithWakeRetry(
+    '/api' + path,
+    {...init, method, headers, credentials:'include'},
+    ['GET','HEAD','OPTIONS'].includes(method),
+  );
   if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.detail || Object.values(data).flat().join(' ') || `Request failed (${response.status})`); }
   return response.status === 204 ? undefined as T : response.json();
 }
