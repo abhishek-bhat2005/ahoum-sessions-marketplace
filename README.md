@@ -18,9 +18,14 @@
   <img alt="Render" src="https://img.shields.io/badge/Deployed_on-Render-46E3B7?logo=render&logoColor=white">
 </p>
 
-> [!NOTE]
-> The services use Render's free tier. The first request after inactivity can take
-> around a minute while the API wakes up.
+> [!IMPORTANT]
+> **Deployment availability:** The API runs on Render's Free compute plan and
+> automatically sleeps after **15 minutes without incoming traffic**. Its first request
+> after sleeping starts it again and can take **about one minute** to complete. This is
+> expected free-tier hosting behavior, not an application failure. The frontend now
+> waits and retries during this cold start. Reviewers can wake the API first by opening
+> the [API health endpoint](https://ahoum-api-abhishek-bhat.onrender.com/api/health/)
+> and waiting for `{"status":"ok"}` before testing the application.
 
 ## Overview
 
